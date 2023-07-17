@@ -1,0 +1,127 @@
+jenkins file api backend
+
+for backend with database
+
+
+
+pipeline {
+    agent{
+       label 'lms-project'
+    }
+  
+  environment {
+
+    DOCKERHUB_CREDENTIALS = credentials('yoursureshdockerhub')
+     registry = "yoursureshdockerhub/project-api"
+        registryCredential = 'yoursureshdockerhub'
+        dockerImage = ''
+    }
+    
+     stages {
+   
+ 
+        stage('creating  new docker network') {
+            steps {
+               
+                sh 'docker network create lmsnetwork'
+            }
+        }
+
+
+         stage('building the docker image') {
+            steps {
+               
+                sh 'cd api && docker build -t yoursureshdockerhub/project-api .'
+            }
+          
+        }
+         stage('Logging into dockerhub account') {
+            steps {
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+            }
+        }          
+        stage('pushing the docker image into dockerhub') {
+            steps {
+                  sh 'docker push yoursureshdockerhub/project-api'
+            }
+        }
+        stage('Remove old docker images') {
+             steps {
+                 sh 'docker rmi -f yoursureshdockerhub/project-api'
+            }
+        }
+         stage('creating database container') {
+             steps {
+                 sh 'docker container rm --force lmsdb'
+                 sh 'docker run -d -p 5432:5432 --network lmsnetwork -e  POSTGRES_PASSWORD=password --name lmsdb postgres'
+            }
+        }
+         stage('Running the docker container') {
+            steps {
+                  sh 'docker container rm --force backend'
+                  sh 'docker run -d -p 8080:8080 --network lmsnetwork -e DATABASE_URL=postgresql://postgres:password@lmsdb:5432/postgres --name backend -e PORT=8080 -e MODE=local yoursureshdockerhub/project-api'
+            }
+        }
+    }
+}
+
+
+
+
+for frontend webapp******
+
+
+
+
+
+pipeline {
+    agent {
+      label 'lms-project'
+    }
+
+    environment {
+
+    DOCKERHUB_CREDENTIALS = credentials('yoursureshdockerhub')
+     registry = "yoursureshdockerhub/project-webapp"
+        registryCredential = 'yoursureshdockerhub'
+        dockerImage = ''
+    }
+
+    stages {
+        
+
+        stage('Building the docker image') {
+            steps {
+                sh 'cd webapp && docker build -t yoursureshdockerhub/project-webapp .'
+            }
+        }
+        stage('Logging into dockerhub account') {
+            steps {
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+            }
+        }
+        stage('pushing the docker image into dockerhub') {
+            steps {
+                  sh 'docker push yoursureshdockerhub/project-webapp'
+            }
+        }
+        stage('Remove old docker images') {
+             steps {
+                 sh 'docker rmi -f yoursureshdockerhub/project-webapp'
+            }
+        }
+         stage('Running the docker container') {
+            steps {
+                  sh 'docker container rm --force f-end'
+                  sh 'docker run -dt -p 8000:80 --name f-end yoursureshdockerhub/project-webapp'
+            }
+        }
+    }
+}
+
+
+
+
+qadqruaphvpzwqsi
+
+
